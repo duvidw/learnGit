@@ -9,6 +9,7 @@ public:
   struct Angles {
     float pitch;
     float roll;
+    float yaw;
   };
 
   explicit Mpu6050(TwoWire& wirePort = Wire, uint8_t address = 0x68);
@@ -20,4 +21,6 @@ private:
   Adafruit_MPU6050 mpu;
   TwoWire* wire;
   uint8_t deviceAddress;
+  float yaw = 0.0f;
+  unsigned long lastReadTime = 0;
 };

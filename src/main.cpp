@@ -47,9 +47,10 @@ String formatAngles(const Mpu6050::Angles& angles) {
   char payload[64];
   snprintf(payload,
            sizeof(payload),
-           "pitch=%.2f,roll=%.2f",
+           "pitch=%.2f,roll=%.2f,yaw=%.2f",
            angles.pitch,
-           angles.roll);
+           angles.roll,
+           angles.yaw);
   return String(payload);
 }
 
@@ -77,7 +78,7 @@ void startBleServer() {
     Serial.println("Failed to create BLE characteristic");
     return;
   }
-  rotationCharacteristic->setValue("pitch=0.00,roll=0.00");
+  rotationCharacteristic->setValue("pitch=0.00,roll=0.00,yaw=0.00");
 
   NimBLEAdvertising* advertising = NimBLEDevice::getAdvertising();
   advertising->addServiceUUID(kServiceUuid);
@@ -117,7 +118,7 @@ void loop() {
     Serial.println(imuReady ? "MPU6050 connected" : "MPU6050 retry failed");
   }
 
-  Mpu6050::Angles angles{0.0f, 0.0f};
+  Mpu6050::Angles angles{0.0f, 0.0f, 0.0f};
   if (imuReady) {
     angles = imu.readAngles();
   }

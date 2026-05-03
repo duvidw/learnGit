@@ -30,8 +30,16 @@ Mpu6050::Angles Mpu6050::readAngles() {
   const float pitch = atan2f(ax, sqrtf((ay * ay) + (az * az))) * 57.2958f;
   const float roll = atan2f(ay, sqrtf((ax * ax) + (az * az))) * 57.2958f;
 
+  const unsigned long now = millis();
+  if (lastReadTime > 0) {
+    const float dt = (now - lastReadTime) / 1000.0f;
+    yaw += gyro.gyro.z * 57.2958f * dt;
+  }
+  lastReadTime = now;
+
   return Angles{
       pitch,
       roll,
+      yaw,
   };
 }

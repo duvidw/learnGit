@@ -4,8 +4,6 @@ Mpu6050::Mpu6050(TwoWire& wirePort, uint8_t address)
     : wire(wirePort), deviceAddress(address) {}
 
 bool Mpu6050::begin() {
-  wire.begin();
-
   if (readByte(Register::WhoAmI) != 0x68) {
     return false;
   }

@@ -43,14 +43,13 @@ public:
 
 ServerCallbacks serverCallbacks;
 
-String formatRotation(const Mpu6050::Rotation& rotation) {
+String formatAngles(const Mpu6050::Angles& angles) {
   char payload[64];
   snprintf(payload,
            sizeof(payload),
-           "x=%.2f,y=%.2f,z=%.2f",
-           rotation.x,
-           rotation.y,
-           rotation.z);
+           "pitch=%.2f,roll=%.2f",
+           angles.pitch,
+           angles.roll);
   return String(payload);
 }
 
@@ -78,7 +77,7 @@ void startBleServer() {
     Serial.println("Failed to create BLE characteristic");
     return;
   }
-  rotationCharacteristic->setValue("x=0.00,y=0.00,z=0.00");
+  rotationCharacteristic->setValue("pitch=0.00,roll=0.00");
 
   NimBLEAdvertising* advertising = NimBLEDevice::getAdvertising();
   advertising->addServiceUUID(kServiceUuid);
@@ -109,7 +108,7 @@ void loop() {
     delay(10);
     return;
   }
-  Serial.println("Publishing rotation data...");
+  Serial.println("Publishing angle data...");
   lastPublishAt = now;
 
   if (!imuReady && (now - lastImuRetryAt >= kImuRetryIntervalMs)) {
@@ -118,12 +117,12 @@ void loop() {
     Serial.println(imuReady ? "MPU6050 connected" : "MPU6050 retry failed");
   }
 
-  Mpu6050::Rotation rotation{0.0f, 0.0f, 0.0f};
+  Mpu6050::Angles angles{0.0f, 0.0f};
   if (imuReady) {
-    rotation = imu.readRotation();
+    angles = imu.readAngles();
   }
 
-  const String payload = formatRotation(rotation);
+  const String payload = formatAngles(angles);
 
   if (rotationCharacteristic != nullptr) {
     rotationCharacteristic->setValue(payload.c_str());

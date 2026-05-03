@@ -2,19 +2,19 @@
 
 #include <Arduino.h>
 #include <Adafruit_MPU6050.h>
+#include <Wire.h>
 
 class Mpu6050 {
 public:
-  struct Rotation {
-    float x;
-    float y;
-    float z;
+  struct Angles {
+    float pitch;
+    float roll;
   };
 
   explicit Mpu6050(TwoWire& wirePort = Wire, uint8_t address = 0x68);
 
   bool begin();
-  Rotation readRotation();
+  Angles readAngles();
 
 private:
   Adafruit_MPU6050 mpu;

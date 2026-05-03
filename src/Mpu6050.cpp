@@ -15,10 +15,10 @@ bool Mpu6050::begin() {
 }
 
 Mpu6050::Rotation Mpu6050::readRotation() {
-  mpu.getEvent(nullptr, nullptr, nullptr);
-
+  sensors_event_t accel;
   sensors_event_t gyro;
-  mpu.getEvent(nullptr, &gyro, nullptr);
+  sensors_event_t temp;
+  mpu.getEvent(&accel, &gyro, &temp);
 
   return Rotation{
       gyro.gyro.x * 57.2958f,

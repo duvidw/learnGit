@@ -22,9 +22,26 @@ constexpr int kI2cSclPin = 22;
 Mpu6050 imu;
 NimBLEServer* bleServer = nullptr;
 NimBLECharacteristic* rotationCharacteristic = nullptr;
+bool bleClientConnected = false;
 unsigned long lastPublishAt = 0;
 unsigned long lastImuRetryAt = 0;
 bool imuReady = false;
+
+class ServerCallbacks : public NimBLEServerCallbacks {
+public:
+  void onConnect(NimBLEServer* server, NimBLEConnInfo& connInfo) override {
+    bleClientConnected = true;
+    Serial.printf("BLE client connected: %s\n", connInfo.getAddress().toString().c_str());
+  }
+
+  void onDisconnect(NimBLEServer* server, NimBLEConnInfo& connInfo, int reason) override {
+    bleClientConnected = false;
+    Serial.printf("BLE client disconnected (reason=%d), restarting advertising\n", reason);
+    NimBLEDevice::startAdvertising();
+  }
+};
+
+ServerCallbacks serverCallbacks;
 
 String formatRotation(const Mpu6050::Rotation& rotation) {
   char payload[64];
@@ -42,17 +59,30 @@ void startBleServer() {
   NimBLEDevice::setPower(ESP_PWR_LVL_P9);
 
   bleServer = NimBLEDevice::createServer();
+  if (bleServer == nullptr) {
+    Serial.println("Failed to create BLE server");
+    return;
+  }
+
+  bleServer->setCallbacks(&serverCallbacks);
   NimBLEService* service = bleServer->createService(kServiceUuid);
+  if (service == nullptr) {
+    Serial.println("Failed to create BLE service");
+    return;
+  }
 
   rotationCharacteristic = service->createCharacteristic(
       kRotationCharacteristicUuid,
       NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  if (rotationCharacteristic == nullptr) {
+    Serial.println("Failed to create BLE characteristic");
+    return;
+  }
   rotationCharacteristic->setValue("x=0.00,y=0.00,z=0.00");
-
-  service->start();
 
   NimBLEAdvertising* advertising = NimBLEDevice::getAdvertising();
   advertising->addServiceUUID(kServiceUuid);
+  advertising->setName("C3-MPU6050");
   advertising->start();
 }
 }  // namespace
@@ -79,7 +109,7 @@ void loop() {
     delay(10);
     return;
   }
-
+  Serial.println("Publishing rotation data...");
   lastPublishAt = now;
 
   if (!imuReady && (now - lastImuRetryAt >= kImuRetryIntervalMs)) {
@@ -95,8 +125,12 @@ void loop() {
 
   const String payload = formatRotation(rotation);
 
-  rotationCharacteristic->setValue(payload.c_str());
-  rotationCharacteristic->notify();
+  if (rotationCharacteristic != nullptr) {
+    rotationCharacteristic->setValue(payload.c_str());
+    if (bleClientConnected) {
+      rotationCharacteristic->notify();
+    }
+  }
   NimBLEDevice::getAdvertising()->setName(kDeviceName);
 
   Serial.println(payload);

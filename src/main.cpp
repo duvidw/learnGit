@@ -109,7 +109,7 @@ void loop() {
     delay(10);
     return;
   }
-  Serial.println("Publishing angle data...");
+  Serial.print("Publishing angle data: ");
   lastPublishAt = now;
 
   if (!imuReady && (now - lastImuRetryAt >= kImuRetryIntervalMs)) {
